@@ -1,0 +1,6 @@
+name: Ticketer
+main: com.division.ticketer.core.Ticketer
+version: 0.0.1d
+description: Add a ticket support system to Bukkit.
+commands:
+authors: [Mastershake71]
