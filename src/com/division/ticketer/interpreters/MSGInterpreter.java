@@ -22,10 +22,11 @@ public class MSGInterpreter extends NetInterpreter {
 
     @Override
     public void run(String data, Socket sock, Net_Framework netFrame) {
-        DataSource DB = new Ticketer().getDatasource();
+        DataSource DB = Ticketer.getDatasource();
         String cleandata = data.replace(NetCase.MSG.getNetCase(), "");
         int ticketid = Integer.parseInt(cleandata);
         String output = DB.getMessage(ticketid);
+        output += "%" + DB.getSubject(ticketid) + "%" + DB.getFlagMsg(ticketid);
         netFrame.sendToClient(sock, NetCase.MSG, output);
     }
 }

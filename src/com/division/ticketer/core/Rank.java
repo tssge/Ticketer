@@ -10,16 +10,23 @@ package com.division.ticketer.core;
  */
 public enum Rank {
 
-    SUPERUSER("superuser"),
-    USER("user"),
-    GUEST("guest");
+    SUPERUSER("superuser", 3),
+    SYSTEM("system", 3),
+    USER("user", 2),
+    GUEST("guest", 1);
     private String rank;
+    private int level;
 
-    private Rank(String rankname) {
+    private Rank(String rankname, int level) {
         this.rank = rankname;
+        this.level = level;
     }
 
     public String getRank() {
         return rank;
+    }
+
+    public int getLevel() {
+        return level;
     }
 }

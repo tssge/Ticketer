@@ -25,11 +25,13 @@ public class NOTIFInterpreter extends NetInterpreter {
     public void run(String data, Socket sock, Net_Framework netFrame) {
         String cleandata = data.replace(NetCase.NOTIF.getNetCase(), "");
         String[] delimit = cleandata.split("%");
-        SpoutNotif sNotif = new SpoutNotif();
-        sNotif.sendNotification(delimit[0], delimit[1], delimit[2], Material.PAPER);
         Connected_User cUser = netFrame.getConnectedUser(delimit[0]);
         if (cUser != null) {
             netFrame.sendToClient(cUser.getSocket(), NetCase.NOTIF, cleandata);
+            SpoutNotif sNotif = new SpoutNotif();
+            sNotif.sendNotification(delimit[0], delimit[1], delimit[2], Material.PAPER);
+        } else {
+            netFrame.sendNotifications(delimit[0], delimit[1]);
         }
     }
 }

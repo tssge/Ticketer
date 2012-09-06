@@ -22,6 +22,7 @@ public class MySQLc extends MainSQL {
         super(instance);
         this.TI = instance;
         getConnection();
+        setup();
     }
 
     final protected synchronized void getConnection()
@@ -46,9 +47,11 @@ public class MySQLc extends MainSQL {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS `tickets` ("
                     + "`id` int(11) NOT NULL AUTO_INCREMENT,"
                     + "`player` varchar(255) NOT NULL,"
+                    + "`subject` varchar(255) DEFAULT NULL,"
                     + "`message` text NOT NULL,"
-                    + "`open` tinyint(4) NOT NULL DEFAULT '1',"
+                    + "`status` varchar(255) NOT NULL DEFAULT 'OPEN',"
                     + "`GMAssign` varchar(255) DEFAULT NULL,"
+                    + "`flagged` int(11) NOT NULL DEFAULT '0',"
                     + "PRIMARY KEY (`id`)"
                     + ") ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 

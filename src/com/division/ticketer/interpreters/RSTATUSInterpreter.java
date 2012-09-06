@@ -22,7 +22,7 @@ public class RSTATUSInterpreter extends NetInterpreter {
     
     @Override
     public void run(String data, Socket sock, Net_Framework netFrame){
-        DataSource DB = new Ticketer().getDatasource();
+        DataSource DB = Ticketer.getDatasource();
         String cleandata = data.replace(NetCase.RSTATUS.getNetCase(),"");
         int ticketid = Integer.parseInt(cleandata);
         netFrame.sendToClient(sock, NetCase.RSTATUS, DB.getStatus(ticketid));

@@ -24,8 +24,7 @@ public class CONNInterpreter extends NetInterpreter {
 
     @Override
     public void run(String data, Socket sock, Net_Framework netframe) {
-        Ticketer TI = new Ticketer();
-        Accounts acc = TI.getAccounts();
+        Accounts acc = Ticketer.getAccounts();
         String clean = data.replace(NetCase.CONN.getNetCase(), "");
         String[] delimit = clean.split("%");
         String username = delimit[1];
@@ -36,7 +35,7 @@ public class CONNInterpreter extends NetInterpreter {
             Connected_User cUser = netframe.getConnectedUser(sock);
             netframe.createSpecListen(cUser);
             if (cUser != null) {
-                rank = acc.getRank(cUser.getUsername());
+                rank = Accounts.getRank(cUser.getUsername());
                 netframe.sendToClient(sock, NetCase.CONNC, rank.getRank());
             } else {
                 System.out.println("[Severe] Error retrieving connected user.");

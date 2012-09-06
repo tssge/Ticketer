@@ -22,7 +22,7 @@ public class ASNGInterpreter extends NetInterpreter {
 
     @Override
     public void run(String data, Socket sock, Net_Framework netFrame) {
-        DataSource DB = new Ticketer().getDatasource();
+        DataSource DB = Ticketer.getDatasource();
         String cleandata = data.replace(NetCase.ASNG.getNetCase(), "");
         String output = DB.getAssignments(cleandata);
         netFrame.sendToClient(sock, NetCase.ASNG, output);

@@ -22,8 +22,7 @@ public class GMLInterpreter extends NetInterpreter {
 
     @Override
     public void run(String data, Socket sock, Net_Framework netFrame) {
-        Ticketer TI = new Ticketer();
-        Accounts acc = TI.getAccounts();
+        Accounts acc = Ticketer.getAccounts();
         String accountList = acc.getAccounts();
         netFrame.sendToClient(sock, NetCase.GML, accountList);
     }

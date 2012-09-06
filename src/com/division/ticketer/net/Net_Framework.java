@@ -6,8 +6,10 @@ package com.division.ticketer.net;
 
 import com.division.ticketer.config.Accounts;
 import com.division.ticketer.config.TicketerConfig;
+import com.division.ticketer.core.Rank;
 import com.division.ticketer.core.Ticketer;
 import com.division.ticketer.interpreters.TicketerInterpreter;
+import com.division.ticketer.spout.SpoutNotif;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -17,6 +19,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bukkit.Material;
 
 /**
  *
@@ -26,8 +29,8 @@ public class Net_Framework extends Thread {
 
     private static String host;
     private static int port;
-    private static ServerSocket tbes;
-    private boolean active = true;
+    private ServerSocket tbes;
+    private static boolean active = true;
     private ArrayList<Connected_User> connected_users = new ArrayList<Connected_User>();
     Ticketer TI;
     TicketerConfig tcfg;
@@ -35,11 +38,19 @@ public class Net_Framework extends Thread {
 
     public Net_Framework(Ticketer instance) {
         this.TI = instance;
-        this.tcfg = TI.getTConfig();
-        this.acc = TI.getAccounts();
+        this.tcfg = Ticketer.getTConfig();
+        this.acc = Ticketer.getAccounts();
         this.host = tcfg.getServerHost();
         this.port = tcfg.getServerPort();
         System.out.println("[Ticketer] Ticketer back-end started on port: " + tcfg.getServerPort());
+        Thread keepAliveThread = new Thread(new keepAlive(this));
+        keepAliveThread.setDaemon(active);
+        keepAliveThread.setName("keepAlive");
+        keepAliveThread.start();
+    }
+
+    public Ticketer getInstance() {
+        return TI;
     }
 
     public void shutdownListener() {
@@ -49,7 +60,6 @@ public class Net_Framework extends Thread {
             try {
                 tbes.close();
             } catch (IOException ex) {
-                Logger.getLogger(Net_Framework.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -81,15 +91,9 @@ public class Net_Framework extends Thread {
                     bytes = in.read(bytesRec, 0, bytesRec.length);
                     String data = new String(bytesRec, 0, bytes);
                     String rawCase = data.substring(0, 4);
-                    System.out.println("rawCase: " + rawCase);
                     NetCase netCase = getNetCase(rawCase);
-                    System.out.println("NetCase: " + netCase);
                     try {
-                        TicketerInterpreter tickint;
-                        String clazzpath = "com.division.ticketer.interpreters.";
-                        tickint = (TicketerInterpreter) Ticketer.class.getClassLoader().loadClass(clazzpath + netCase.name() + "Interpreter").newInstance();
-                        System.out.println(tickint.toString());
-                        tickint.run(data, conn, this);
+                        runInterpreter(netCase.name(), data, conn);
                     } catch (Exception ex) {
                         sendToClient(conn, NetCase.UKNC, null);
                     }
@@ -97,7 +101,6 @@ public class Net_Framework extends Thread {
 
 
             } catch (Exception ex) {
-                ex.printStackTrace();
             }
         }
     }
@@ -128,14 +131,9 @@ public class Net_Framework extends Thread {
                         String rawCase = data.substring(0, 4);
                         NetCase netCase = getNetCase(rawCase);
                         try {
-                            TicketerInterpreter tickint;
-                            String clazzpath = "com.division.ticketer.interpreters.";
-                            tickint = (TicketerInterpreter) Ticketer.class.getClassLoader().loadClass(clazzpath + netCase.name() + "Interpreter").newInstance();
-                            System.out.println(tickint.toString());
-                            tickint.run(data, specSocket, netFrame);
+                            runInterpreter(netCase.name(), data, specSocket);
                         } catch (Exception ex) {
                             sendToClient(specSocket, NetCase.UKNC, null);
-                            System.out.println(rawCase);
                         }
 
                     }
@@ -156,11 +154,45 @@ public class Net_Framework extends Thread {
         }
     }
 
+    public class keepAlive implements Runnable {
+
+        Net_Framework netFrame;
+
+        public keepAlive(Net_Framework netFrame) {
+            this.netFrame = netFrame;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                for (Connected_User cUser : connected_users) {
+                    netFrame.sendToClient(cUser.getSocket(), NetCase.PING, "");
+                }
+                try {
+                    Thread.sleep(60000);
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
+    }
+
     public void createSpecListen(Connected_User user) {
         Thread specListen = new Thread(new SpecListenThread(user, this));
         specListen.setDaemon(true);
         specListen.setName(user.getUsername());
         specListen.start();
+    }
+
+    public void setActive(boolean active) {
+        Net_Framework.active = active;
+    }
+
+    public void closeConnection() {
+        try {
+            this.tbes.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Net_Framework.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public void sendToClient(Socket sock, NetCase ncase, String data) {
@@ -170,7 +202,6 @@ public class Net_Framework extends Thread {
             os.write(bytesSent);
             os.flush();
         } catch (IOException ex) {
-            ex.printStackTrace();
         }
 
     }
@@ -197,7 +228,8 @@ public class Net_Framework extends Thread {
         }
         return null;
     }
-        public Connected_User getConnectedUser(String username) {
+
+    public Connected_User getConnectedUser(String username) {
         for (Connected_User cuser : connected_users) {
             if (cuser.getUsername().equalsIgnoreCase(username)) {
                 return cuser;
@@ -213,5 +245,56 @@ public class Net_Framework extends Thread {
             }
         }
         return null;
+    }
+
+    public void runInterpreter(String inter, String data, Socket sock) {
+        try {
+            TicketerInterpreter tickint;
+            String clazzpath = "com.division.ticketer.interpreters.";
+            tickint = (TicketerInterpreter) Ticketer.class.getClassLoader().loadClass(clazzpath + inter + "Interpreter").newInstance();
+            System.out.println(tickint.toString());
+            tickint.run(data, sock, this);
+        } catch (Exception ex) {
+        }
+    }
+
+    public void sendNotifications(String title, String message) {
+        for (Connected_User cu : connected_users) {
+            sendToClient(cu.getSocket(), NetCase.NOTIF, title + "%" + message);
+            runInterpreter("LRQ", "", cu.getSocket());
+        }
+        for (String acco : Ticketer.getAccounts().getAccounts().split("%")) {
+            SpoutNotif sNotif = new SpoutNotif();
+            sNotif.sendNotification(acco, title, message, Material.PAPER);
+        }
+    }
+
+    public void notifyGreater(Rank rank, int ticketid, String msg) {
+        for (Connected_User cUser : connected_users) {
+            if (Accounts.getRank(cUser.getUsername()).getLevel() > rank.getLevel()) {
+                runInterpreter("LRQ", "" + ticketid, cUser.getSocket());
+                sendToClient(cUser.getSocket(), NetCase.UFLG, ticketid + "%" + msg);
+            }
+        }
+    }
+
+    public void massRefresh() {
+        for (Connected_User cUser : connected_users) {
+            runInterpreter("LRQ", "", cUser.getSocket());
+        }
+    }
+
+    public void massDisconnect() {
+        for (Connected_User cUser : connected_users) {
+            sendToClient(cUser.getSocket(), NetCase.CTO, "");
+            try {
+                cUser.getSocket().close();
+            } catch (Exception ex) {
+            }
+        }
+    }
+
+    public ArrayList<Connected_User> getConnectedUsers() {
+        return connected_users;
     }
 }

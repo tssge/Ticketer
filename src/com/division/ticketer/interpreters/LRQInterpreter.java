@@ -22,7 +22,7 @@ public class LRQInterpreter extends NetInterpreter {
 
     @Override
     public void run(String data, Socket sock, Net_Framework netFrame) {
-        DataSource DB = new Ticketer().getDatasource();
+        DataSource DB = Ticketer.getDatasource();
         String output = DB.getOpenTickets();
         netFrame.sendToClient(sock, NetCase.LRQ, output);
     }
