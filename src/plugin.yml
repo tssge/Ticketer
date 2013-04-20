@@ -34,4 +34,5 @@ commands:
   tconfirm:
     usage: /tconfirm
     description: Confirms a GMs attempt to contact you.
-authors: [Mastershake71]
+author: Mastershake71
+authors: [Mastershake71, tssge]
